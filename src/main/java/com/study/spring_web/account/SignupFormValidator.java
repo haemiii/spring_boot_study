@@ -10,15 +10,18 @@ import org.springframework.validation.Validator;
 public class SignupFormValidator implements Validator {
 
     private final AccountRepository accountRepository;
+
+    // 검증하려는 클래스 체크
     @Override
     public boolean supports(Class<?> aClass) {
         return aClass.isAssignableFrom(SignUpForm.class);
     }
 
+    // 검증
     @Override
-    public void validate(Object o, Errors errors) {
+    public void validate(Object object, Errors errors) {
         // TODO email, nickname
-        SignUpForm signUpForm = (SignUpForm)errors;
+        SignUpForm signUpForm = (SignUpForm)object;
         if (accountRepository.existsByEmail(signUpForm.getEmail())) {
             errors.rejectValue("email", "invalid.email", new Object[]{signUpForm.getEmail()}, "이미 사용중인 이메일입니다.");
         }
