@@ -20,12 +20,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 public class AccountController {
 
     private final SignupFormValidator signupFormValidator;
-    private final AccountRepository accountRepository;
-    private final JavaMailSender javaMailSender;
+    private final AccountService accountService;
 
     @InitBinder("signUpForm")
     public void initBinder(WebDataBinder webDataBinder){
-        webDataBinder.addValidators(signupFormValida증tor);
+        webDataBinder.addValidators(signupFormValidator);
     }
 
     @GetMapping("/sign-up")
@@ -41,26 +40,10 @@ public class AccountController {
         if (errors.hasErrors()){
             return "account/sign-up";
         }
-        Account account = Account.builder()
-                .email(signUpForm.getEmail())
-                .nickname(signUpForm.getNickname())
-                .password(signUpForm.getPassword()) // TODO encoding
-                .studyCreatedByWeb(true)
-                .studyEnrollmentResultByWeb(true)
-                .studyUpdateByWeb(true)
-                .build();
 
-        Account newAccount = accountRepository.save(account);
-
-        newAccount.generateEmailCheckToken();
-        SimpleMailMessage mailMessage = new SimpleMailMessage();
-        mailMessage.setTo(newAccount.getEmail());
-        mailMessage.setSubject("스터디올래, 회원 가입 인증");
-        mailMessage.setText("/check-email-token?token="+newAccount.getEmailCheckToken()+
-                "email="+newAccount.getEmail());
-
-        javaMailSender.send(mailMessage);
-
+        accountService.processNewAccount(signUpForm);
         return "redirect:/";
     }
+
+
 }
