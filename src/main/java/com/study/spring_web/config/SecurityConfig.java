@@ -3,7 +3,6 @@ package com.study.spring_web.config;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
@@ -15,7 +14,6 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 @Configuration
 @EnableWebSecurity  // 시큐리티 설정을 직접 하겠다
-@EnableWebMvc
 public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -24,20 +22,19 @@ public class SecurityConfig {
         // profile은 GET요청만 허용
         http
                 .authorizeHttpRequests((auth) -> auth
-                        .requestMatchers("/", "/login", "/sign-up", "/check-email", "/check-email-token",
+                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+                        .requestMatchers("/node_modules/**").permitAll()
+                        .requestMatchers("/", "/login", "/sign-up", "/check-email-token",
                                 "/email-login", "/check-email-login", "/login-link").permitAll()
                         .requestMatchers(HttpMethod.GET, "/profile/*").permitAll()
                         .anyRequest().authenticated()
-                );
+                ).formLogin(form -> form
+                        .loginPage("/login")
+                        .permitAll())
+                .logout((logout) -> logout
+                        .logoutSuccessUrl("/")
+                        .permitAll());
         return http.build();
 
-    }
-    @Bean
-    public SecurityFilterChain resources(HttpSecurity http) throws Exception {
-         http.authorizeHttpRequests((auth) -> auth
-                 .requestMatchers("/node_modules/**").permitAll()
-                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll());
-
-         return http.build();
     }
 }
