@@ -1,6 +1,8 @@
 package com.study.spring_web.account;
 
 import com.study.spring_web.domain.Account;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.MailSender;
@@ -15,16 +17,24 @@ import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
+import java.time.LocalDateTime;
+
 @Controller
 @RequiredArgsConstructor
 public class AccountController {
 
     private final SignupFormValidator signupFormValidator;
+    private final AccountRepository accountRepository;
     private final AccountService accountService;
 
     @InitBinder("signUpForm")
     public void initBinder(WebDataBinder webDataBinder){
         webDataBinder.addValidators(signupFormValidator);
+    }
+
+    @GetMapping("/")
+    public String Home(){
+        return "index";
     }
 
     @GetMapping("/sign-up")
@@ -36,13 +46,41 @@ public class AccountController {
     }
 
     @PostMapping("/sign-up")
-    public String signUpSubmit(@Valid @ModelAttribute SignUpForm signUpForm, Errors errors){
+    public String signUpSubmit(@Valid @ModelAttribute SignUpForm signUpForm, Errors errors
+        , HttpServletRequest request, HttpServletResponse response){
         if (errors.hasErrors()){
             return "account/sign-up";
         }
 
-        accountService.processNewAccount(signUpForm);
+
+        Account account = accountService.processNewAccount(signUpForm);
+        accountService.login(account, request, response);
         return "redirect:/";
+    }
+    @GetMapping("/check-email-token")
+    public String checkEmailToken(String token, String email, Model model,
+                                  HttpServletRequest request, HttpServletResponse response){
+        Account account = accountRepository.findByEmail(email);
+        String view = "account/checked-email";
+        if (account == null){
+            model.addAttribute("error", "wrong.email");
+            return view;
+        }
+        if (!account.isValidToken(token)){
+            model.addAttribute("error", "wrong.token");
+            return view;
+        }
+
+//        if (!account.getEmailCheckToken().equals(token)){
+//            model.addAttribute("error", "wrong.token");
+//            return view;
+//        }
+
+        account.completeSignUp();
+        accountService.login(account, request, response);
+        model.addAttribute("numberOfUser", accountRepository.count());
+        model.addAttribute("nickname", account.getNickname());
+        return view;
     }
 
 
